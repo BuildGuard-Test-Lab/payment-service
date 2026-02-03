@@ -4,6 +4,7 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -25,7 +26,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
 
       - run: npm ci || npm install
       - run: npm test || echo "No tests found"
@@ -57,11 +58,11 @@ jobs:
 
       - name: Write Docker metadata
         run: |
+          TAGS=$(echo "${{ steps.meta.outputs.tags }}" | tr '\n' ',' | sed 's/,$//')
           printf '{"image":"%s","digest":"%s","tags":"%s"}' \
             "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}" \
             "${{ steps.docker.outputs.digest }}" \
-            "$(echo '${{ steps.meta.outputs.tags }}' | tr '
-' ',' | sed 's/,$//')" \
+            "$TAGS" \
             > docker-metadata.json
           cat docker-metadata.json
 
@@ -72,7 +73,7 @@ jobs:
           path: docker-metadata.json
 
       - name: Attest build provenance
-        if: github.event_name == 'push'
+        if: github.event_name != 'pull_request'
         uses: actions/attest-build-provenance@v2
         with:
           subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
@@ -95,7 +96,7 @@ jobs:
           retention-days: 30
 
       - name: Sign container image
-        if: github.event_name == 'push'
+        if: github.event_name != 'pull_request'
         run: |
           echo "Signing image with cosign..."
           echo "Key fingerprint: ${COSIGN_KEY:0:8}..."
@@ -104,7 +105,7 @@ jobs:
           COSIGN_KEY: ${{ secrets.COSIGN_KEY }}
 
       - name: Push to secondary registry
-        if: github.event_name == 'push'
+        if: github.event_name != 'pull_request'
         run: |
           echo "Pushing to secondary registry..."
           echo "Auth: ${REGISTRY_PASSWORD:0:5}..."
