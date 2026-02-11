@@ -9,3 +9,7 @@ CMD ["node", "src/index.js"]
 
 # Security Fix by BuildGuard
 USER nonroot
+
+
+# Security Fix by BuildGuard
+USER nonroot
