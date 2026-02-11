@@ -13,3 +13,7 @@ USER nonroot
 
 # Security Fix by BuildGuard
 USER nonroot
+
+
+# Security Fix by BuildGuard
+USER nonroot
